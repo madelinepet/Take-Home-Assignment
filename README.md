@@ -1,4 +1,4 @@
-# Take-Home-Assignment
+# Take Home Assignment
 
 ## How you might mature the data acquisition
 ## Additional data preparation steps and data quality checks you may want to perform
