@@ -1,2 +1,4 @@
 __pycache__/
 sample_geo_data.json
+files/*
+extracted/*
