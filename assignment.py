@@ -78,7 +78,7 @@ def clean_data(extracted_file_path):
         # there are many things I could do here if I had more time
         # for now I will drop duplicates and remove columns that aren't needed
         # To make this more robust, I would clean and standardize the text
-        # convert dates and floats to the appropriate formats/types
+        # and convert dates and floats to the appropriate formats/types
         # I would also do ifnull checks and add in logic to fill in null values as needed
 
         # Select cols needed in final output defined in assignment
@@ -107,13 +107,12 @@ def retreive_geo_data():
 
 def filter_data(event_df, geo_data):
     """ Please filter the event data to those events located within the US 
-        based on their lat/lon coordinates (lat: col 56, long:col 57)
+        based on their lat/lon coordinates (lat: ActionGeo_Long, long:ActionGeo_Lat)
     """
     # Load choropleth data using geopandas
     choropleth_df = gpd.read_file(geo_data)
 
     # Convert the event dataframe to a GeoDataFrame using "ActionGeo_Lat" and "ActionGeo_Long" columns
-    # which are lat and long respectively
     event_df['geometry'] = event_df.apply(lambda row: Point(row['ActionGeo_Long'], row['ActionGeo_Lat']), axis=1)
     # Specify the CRS for the event data
     event_gdf = gpd.GeoDataFrame(event_df, geometry='geometry', crs="EPSG:4326")
@@ -135,7 +134,7 @@ def load_db(filtered_event_data, event_root_codes, event_base_codes, event_codes
     # This is just example code
 
     # # Define the database connection parameters
-    # database_uri = "dbname=mydatabase user=myuser password=mypassword host=localhost"
+    # database_uri = "<insert your uri connection string here>"
 
     # # Establish a connection to the database
     # connection = psycopg2.connect(database_uri)
