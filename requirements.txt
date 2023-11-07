@@ -1,6 +1,6 @@
 requests==2.31.0
-psycopg2==2.9.9
-psycopg2-binary==2.9.9
-pandas==2.1.2
-geopandas==0.14.0
+# psycopg2==2.9.9 # uncomment if you want this back
+# psycopg2-binary==2.9.9 # uncomment if you want this back
+pandas
+geopandas
 shapely==2.0.2
