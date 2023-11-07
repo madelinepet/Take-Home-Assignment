@@ -16,15 +16,23 @@ from zipfile import BadZipFile
 from psycopg2 import OperationalError
 from mappings import event_root_codes, event_base_codes, event_codes, map_fips_to_iso2
 
+
 def main():
     """ Main controller function
     """
     try:
-        extracted_file_path, zip_file_path = retreive_event_data()
-        geo_data = retreive_geo_data()
+        # add folders because git won't push empty folders
+        try:
+            os.mkdir('files')
+            os.mkdir('extracted')
+        except Exception:
+            print('Folders already exist, no problem! Continuing...')
+        extracted_file_path, zip_file_path = retrieve_event_data()
+        geo_data = retrieve_geo_data()
         cleaned_data = clean_data(extracted_file_path)
         filtered_event_data = filter_data(cleaned_data, geo_data)
         load_db(filtered_event_data, event_root_codes, event_base_codes, event_codes, map_fips_to_iso2)
+        cleanup(extracted_file_path, zip_file_path)
     except RequestException as e:
         print(f"Error while retrieving data: {e}")
     except BadZipFile as e:
@@ -33,11 +41,9 @@ def main():
         print(f"Database connection error: {e}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-    finally:
-        cleanup(extracted_file_path, zip_file_path)
 
 
-def retreive_event_data() -> str:
+def retrieve_event_data() -> str:
     """ Gets event data from external source.
         I would improve this by looking into the GDELT API.
     """
@@ -50,7 +56,7 @@ def retreive_event_data() -> str:
 
     # get just the file name out of the url
     file_name = file_download_location.split("/")[-1]
-    file_path = 'files/'+ file_name
+    file_path = 'files/' + file_name
 
     # downloading the file to files/
     urlretrieve(file_download_location, file_path)
@@ -65,6 +71,7 @@ def retreive_event_data() -> str:
     print('File downloaded')
     return extracted_file_path, file_path
 
+
 def clean_data(extracted_file_path):
     """ Perform some foundational data prep and quality assurance
     """
@@ -73,7 +80,7 @@ def clean_data(extracted_file_path):
         event_df = pd.read_csv(extracted_file_path, sep='\t')
 
         # name cols so df is easier to use
-        event_df.columns = ['col_' + str(i) for i  in range(61)]
+        event_df.columns = ['col_' + str(i) for i in range(61)]
 
         # there are many things I could do here if I had more time
         # for now I will drop duplicates and remove columns that aren't needed
@@ -82,31 +89,33 @@ def clean_data(extracted_file_path):
         # I would also do ifnull checks and add in logic to fill in null values as needed
 
         # Select cols needed in final output defined in assignment
-        event_df = event_df[['col_0','col_1', 'col_26','col_27', 'col_28','col_52', 'col_53','col_56', 'col_57','col_59', 'col_60']]
-        
+        event_df = event_df[['col_0', 'col_1', 'col_26', 'col_27', 'col_28', 'col_52', 'col_53', 'col_56', 'col_57', 'col_59', 'col_60']]
+
         # name the columns according to doc
         event_df.columns = ['GLOBALEVENTID', 'SQLDATE', 'EventCode', 'EventBaseCode', 'EventRootCode', 'ActionGeo_FullName', 'ActionGeo_CountryCode', 'ActionGeo_Lat', 'ActionGeo_Long', 'DATEADDED', 'SOURCEURL']
         # Drop duplicates
         event_df = event_df.drop_duplicates()
 
         return event_df
-    
+
     except pd.errors.EmptyDataError as e:
         raise pd.errors.EmptyDataError(f"Empty data error: {e}")
     except pd.errors.ParserError as e:
         raise pd.errors.ParserError(f"Parser error: {e}")
     except Exception as e:
-        raise Exception(f"An unexpected error occurred during data cleaning: {e}") 
+        raise Exception(f"An unexpected error occurred during data cleaning: {e}")
 
-def retreive_geo_data():
+
+def retrieve_geo_data():
     """ In addition to the above source data, geometric location data for US counties may be located at:
         https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json
     """
-    print('Retreiving geo data')
+    print('Retrieving geo data')
     return requests.get('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json').content.decode()
 
+
 def filter_data(event_df, geo_data):
-    """ Please filter the event data to those events located within the US 
+    """ Please filter the event data to those events located within the US
         based on their lat/lon coordinates (lat: ActionGeo_Long, long:ActionGeo_Lat)
     """
     # Load choropleth data using geopandas
@@ -125,6 +134,7 @@ def filter_data(event_df, geo_data):
 
     print('Data filtered - might add in specifics using variables here')
     return us_events
+
 
 def load_db(filtered_event_data, event_root_codes, event_base_codes, event_codes, map_fips_to_iso2):
     """ Please use Postgres/GIS as your target database. You should demonstrate how you might make
@@ -171,8 +181,9 @@ def load_db(filtered_event_data, event_root_codes, event_base_codes, event_codes
 
     # cursor.close()
     # connection.close()
-    
+
     print('DB fictionally loaded: fictionally variable number of rows inserted')
+
 
 def cleanup(extracted_file_path, zip_file_path):
     """ Removes downloaded and extracted files at end
@@ -182,5 +193,5 @@ def cleanup(extracted_file_path, zip_file_path):
     os.remove(zip_file_path)
 
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     main()
